@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>日期插件</title>
+	<style type="text/css">
+		*{
+			margin: 0;
+			padding: 0;
+		}
+		html,body{
+			width:100%;
+			height:100%;
+		}
+		.date{
+			width:220px;
+			padding:5px 0;
+			border:1px solid #ddd;
+			background-color:#fff;
+			position: fixed;
+			_position:absolute;
+			z-index: 999;
+		}
+		.date .ctr{
+			margin-bottom:10px;
+			padding: 0 13px;
+		}
+		.date .year{
+			font-size:14px;
+			cursor: pointer;
+		}
+		.date .year b{}
+		.date table{
+			width:95%;
+			margin:0 auto;
+			text-align:center;
+			border-collapse: collapse;
+			border-spacing: 0;
+		}
+		.date table thead{
+			width:100%;
+		}
+		.date table thead th{
+			font-size:16px;
+			color:#444;
+		}
+		.date table thead tr.days th{
+			font-size:15px;
+			color:#555;
+			font-weight:500;
+		}
+		.date table tbody{
+			width:100%;
+		}
+		.date table tbody th{
+			font-size:15px;
+		}
+		.date table tbody td{
+			
+		}
+		.date table tbody td p{
+			font-size:12px;
+			color:#666;
+			margin:5px;
+			cursor: pointer;
+		}
+		.date table tbody td p:hover{
+			background-color: #eaeef2;
+		}
+		.date table tbody td p.on{
+			color: #ae3d3d;
+		}
+		.date .slc{
+			width:100%;
+			height:105px;
+			border-top:1px solid #eee;
+			overflow:hidden;
+			zoom:1;
+			position: relative;
+		}
+		.date .slc ul{
+			width:30%;
+			*width:20%;
+			*padding-right:18px;
+			height: 100%;
+			float:right;
+			overflow: auto;
+			overflow-x: hidden;
+			background-color:#eee;
+			position: relative;
+		}
+		.date .slc ul li{
+			width:100%;
+			line-height: 24px;
+			font-size:14px;
+			text-align:center;
+			color:#222;
+			cursor: pointer;
+			list-style: none;
+		}
+		.date .slc ul li:hover{
+			background-color: #ccc;
+		}
+		.date .slc ul li.on{
+			color: #ae3d3d;
+		}
+		.date .slc table{
+			width:70%;
+			text-align: center;
+			border-spacing: 0;
+			float:left;
+		}
+		.date .slc table td{
+			font-size:14px;
+			line-height: 28px;
+			cursor: pointer;
+			padding:4px;
+		}
+		.date .slc table td.on{
+		    color: #ae3d3d;
+		}
+		.date .slc table td:hover{
+			background-color:#eff1f6;
+		}
+	</style>
+
+	<script type="text/javascript">
+
+		var _date = {
+			l:7,
+			d31:[1,3,5,7,8,10,12],
+			dys:['日','一','二','三','四','五','六'],
+			dt:new Date(),
+			isy:function(){
+				return ((this.year % 4)==0) && ((this.year % 100)!=0) || ((this.year % 400)==0)
+			},
+			isD31:function(n){
+				var r = false;
+
+				for (var i = 0; i < this.d31.length; i++) {
+					if(this.d31[i] == n){
+						r = true;
+						break;
+					}
+				}
+
+				return r;
+			},
+			startDay:function(month){
+				return new Date(this.year+'/'+month+'/1').getDay();
+			},
+			createTr:function(fn){
+				var thTr = document.createElement('tr');
+				fn(thTr);
+				return thTr;
+			},
+			on:function(ele, event_name, func){
+				if(window.attachEvent){
+	                ele.attachEvent(event_name, func);
+	            }
+	            else{
+	                event_name = event_name.replace(/^on/, "");
+	                ele.addEventListener(event_name, func, false);    //默认事件是冒泡
+	            }
+			},
+			off:function(ele, event_name, func){
+				if(window.detachEvent){
+	                ele.detachEvent(event_name, func);
+	            }
+	            else{
+	                event_name = event_name.replace(/^on/, "");
+	                ele.removeEventListener(event_name, func);
+	            }
+			},
+			bind:function(dom){
+				var _self = this;
+				if(dom.tagName !== 'INPUT') return;
+
+				_self.on(dom,'onfocus',function(e){
+					_self.show(dom);
+				})
+				_self.on(dom,'onblur',function(e){
+					_self.hide(false, e);
+				})
+
+			},
+			show:function(dom){
+				"use strict";
+				if(this.isShowSlc) {
+					this.isShowSlc = false;
+					return;
+				}
+				this.resultDom = dom;
+				this.initDom();
+
+				dom.parentNode.appendChild(this.dom)
+
+				var _ptn = window.getComputedStyle ? window.getComputedStyle(this.dom).position : this.dom.currentStyle.position;
+
+				var ptObj = _ptn == 'fixed' ? this.offsetParent(dom) : {top:0,left:0},
+					_top = dom.offsetTop + dom.offsetHeight - ( dom.offsetParent.nodeName == 'BODY' || _ptn != 'fixed' ? ptObj.top : ptObj.top - dom.offsetTop),
+					_left = dom.offsetLeft - ptObj.left;
+				this.dom.style.left = _left+'px';
+
+				this.on(document,'onmousewheel',this.dc)
+
+				var isBm = this.isPositionButtom(dom,this.dom.offsetHeight)
+
+				if(!isBm){
+					var wh = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+					this.dom.style.bottom = wh - _top + dom.height +'px';
+				}else{
+					this.dom.style.top = _top+'px';
+				}
+
+			},
+			offsetParent:function(ele){
+				var pt = ele.parentNode;
+				var r = {
+					ele:null,
+					top:0,
+					left:0
+				}
+
+				countPt(pt);
+
+				function countPt(pt){
+					var _pt = pt.parentNode
+					if(pt.scrollHeight > pt.offsetHeight){
+						r.top += pt.scrollTop;
+					}
+					if(pt.scrollWidth > pt.offsetWidth){
+						r.left += pt.scrollLeft;
+					}
+
+					if(_pt) {
+						ele = _pt;
+						arguments.callee(_pt);
+					}
+				}
+
+				return r;
+			},
+			hide:function(dy,e){
+				if(this.isShowSlc) {
+					this.resultDom.focus();
+					return;
+				}
+				if(dy) {
+					var _mh = (this.mh+'').length == 1 ? '0' + this.mh : this.mh;
+					var _dy = dy.length == 1 ? '0' + dy : dy; 
+					this.resultDom.value = this.year+'/'+_mh+'/'+_dy;
+				}
+				if(this.dom.parentNode) this.dom.parentNode.removeChild(this.dom);
+				this.resultDom.blur();
+				this.off(document,'onmousewheel',this.dc)
+			},
+			isPositionButtom:function (ths,ctHg){
+				var wh = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+				var thsWdBm = wh-( ths.offsetHeight+( ths.offsetTop-this.offsetParent(ths).top ) ); 
+
+				if(!isNaN(ctHg)){
+					return thsWdBm-ctHg > 0
+				}
+			},
+			dc:function(e){
+				_date.hide(false,e)
+			},
+			initDom:function(){
+				var _self = this;
+				var _ctrDom = document.createElement('div'),
+					_thead = document.createElement('thead');
+				var dval = this.resultDom.value,
+					tDate = new Date(dval),
+					_dt = tDate == 'Invalid Date' || tDate == 'NaN' ? _self.dt : tDate;
+
+				_self.dom = document.createElement('div');
+				_self.tb = document.createElement('table');
+				_self.tbody = document.createElement('tbody');
+				_self.slc = document.createElement('div');
+				_self.slcMhDom = document.createElement('table');
+				_self.slcMh = document.createElement('tbody');
+				_self.slcYear = document.createElement('ul');
+				_self.yearDom = document.createElement('span');
+				
+				_self.year = _dt.getFullYear();
+				_self.mh = _dt.getMonth()+1;
+				_self.dy = _dt.getDate();
+
+				_self.syear = null;
+
+				var i = 0;
+
+				_self.dom.className    	= 'date';
+				_ctrDom.className 		= 'ctr';
+				_self.yearDom.className = 'year';
+				_self.slc.className 	= 'slc';
+
+				_self.yearDom.innerHTML = _self.year+'年'+_self.mh+'月 <b>▾</b>';
+
+				_self.on(_self.yearDom, 'onmousedown', _self.showSlc)
+
+				_ctrDom.appendChild(_self.yearDom)
+
+				_thead.appendChild(_self.createTr(function(tr){
+					tr.className = 'days';
+					for(i = 0; i < 7; i++){
+						var _th = document.createElement('th');
+						_th.innerText = _self.dys[i];
+						tr.appendChild(_th);
+					}
+				}))
+
+				_self.addSlcMh();
+
+				_self.slcMhDom.appendChild(_self.slcMh)
+				_self.slc.appendChild(_self.slcMhDom)
+				_self.slc.appendChild(_self.slcYear)
+
+				_self.tb.appendChild(_thead)
+				_self.tb.appendChild(_self.tbody)
+				
+				_self.dom.appendChild(_ctrDom)
+				_self.dom.appendChild(_self.tb)
+
+				_self.resizeTbody(this.mh)
+
+				_self.on(_self.slcYear,'onmousewheel',function(){
+					_self.isShowSlc = true;
+				})
+				_self.on(_self.slcYear,'onmousedown',function(){
+					_self.isShowSlc = true;
+				})
+			},
+			addSlcMh:function(){
+				var _self = this,
+					trs = _self.slcMh.childNodes,
+					trsLe = trs.length;
+
+				var i = 0,n = 1;
+
+				for (i = 0; i < trsLe; i++) {
+					_self.slcMh.removeChild(_self.slcMh.childNodes[0])
+				}
+
+				for (i = 0; i < 3; i++) {
+					_self.slcMh.appendChild(_self.createTr(function(tr){
+						for (var j = 0; j < 4; j++) {
+							var _td = document.createElement('td')
+
+							if(n == _self.mh){
+								_td.className = 'on';
+							}
+
+							_td.innerText = (n++) + '月';
+
+							_td.onmousedown = function(_e){
+								var e = _e || window.event;
+								if(e.stopPropagation){
+									e.stopPropagation();
+									e.preventDefault();
+								}else{
+									_self.isShowSlc = true;
+								}
+								_self.mh = this.innerText.slice(0,-1);
+								_self.year = _self.syear || _self.year;
+								_self.dom.replaceChild(_self.tb, _self.slc);
+								_self.yearDom.childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
+								_self.resizeTbody(_self.mh);
+							}
+							
+							tr.appendChild(_td);
+						}
+					}))
+				}
+			},
+			showSlc:function(_e){
+				var e = _e || window.event;
+				var _self = _date;
+
+				if(e.stopPropagation){
+					e.stopPropagation();
+					e.preventDefault();
+				}else{
+					// e.cancelBubble = true;
+					// e.returnValue = false;
+					_self.isShowSlc = true;
+				}
+				
+				var onLi;
+				var i = 0;
+
+				if(_self.dom.childNodes[1].tagName == 'TABLE'){
+					_self.dom.replaceChild(_self.slc, _self.tb);
+				}else{
+					_self.dom.replaceChild(_self.tb, _self.slc);
+					return;
+				}
+
+				var _trs = _self.slcMh.childNodes;
+
+				for(i = 0; i < _trs.length; i++){
+					var _tds = _trs[i].childNodes;
+					for (var j = 0; j < _tds.length; j++) {
+						if(_tds[j].n == _self.mh){
+							_tds[j].className = 'on';
+						}else if(_tds[j].className == 'on'){
+							_tds[j].className = ''
+						}
+					}
+				}
+
+				_self.slcYear.innerHTML = '';
+
+				for (i = _self.year - 10; i < _self.year+10; i++) {
+				 	addItem(i)
+				}
+
+				_self.slcYear.scrollTop = onLi.offsetTop - _self.slcYear.clientHeight / 2 + 10;
+
+				function addItem(year,isAddPrev){
+					var _li = document.createElement('li')
+
+					_li.innerText = year
+
+					if(year == _self.year) {
+						_li.className = 'on';
+						onLi = _li;
+					}
+
+					_li.onmousedown = function(_e){
+						var e = _e || window.event;
+						if(e.stopPropagation){
+							e.stopPropagation();
+							e.preventDefault();
+						}else{
+							_self.isShowSlc = true;
+						}
+
+						for (i = 0; i < _self.slcYear.childNodes.length; i++) {
+							if(_self.slcYear.childNodes[i].className == 'on'){
+								_self.slcYear.childNodes[i].className = '';
+								break;
+							}
+						}
+
+						this.className = 'on';
+						_self.syear = year;				
+					}
+					
+					_self.slcYear.appendChild(_li)
+				}
+			},
+			resizeTbody:function(mh){
+				var _self = this;
+				var endDay = mh == 2 ? (_self.isy() ? 28 : 29) : (_self.isD31(mh) ? 31 : 30),
+					startDay = _self.startDay(mh),
+					x = 1,
+					le = Math.ceil((startDay + endDay) / 7);
+
+				var trs = _self.tbody.childNodes,
+					trsLe = trs.length;
+				for (var i = 0; i < trsLe; i++) {
+					_self.tbody.removeChild(_self.tbody.childNodes[0])
+				}
+
+				for(var i = 0; i < le; i++){
+					_self.tbody.appendChild(_self.createTr(function(tr){
+						var s = i == 0 ? startDay : 0;
+						x = addTd(tr, x, s, endDay)
+					}))
+				}
+
+				function addTd(tr, x, s, e){
+					for(var i = 0; i < 7; i++){
+						if(x > e) break;
+						var _td = document.createElement('td')
+						if(i >= s) {
+							_td.innerHTML = '<p'+(x == _self.dy && _self.year == _self.dt.getFullYear() && _self.mh == _self.dt.getMonth()+1 ? ' class="on"' : '')+'>'+(x++)+'</p>'
+						}
+						_td.onmousedown = function(_e){
+							var e = _e || window.event;
+							_self.hide(this.childNodes[0].innerText, e);
+						}
+						tr.appendChild(_td)
+					}
+					return x;
+				}
+			}
+		}
+
+	</script>
+</head>
+<body>
+	<div>
+	<p>Date1:<input id="date1" type="text" /></p>
+
+	<div style="width:120%;height:800px;"></div>
+
+	<div style="width:100%;height:500px;overflow:auto;">
+		<p>lable</p>
+		<div style="width:100%;height:800px;"></div>
+		<p>Date3<input id="date3" type="text" /></p>
+		<div style="width:100%;height:200px;"></div>
+	</div>
+
+	<p>Date2<input id="date2" type="text" /></p>
+
+	<div style="width:100%;height:200px;"></div>
+	</div>
+	<script type="text/javascript">
+		_date.bind(document.getElementById('date1'))
+		_date.bind(document.getElementById('date2'))
+		_date.bind(document.getElementById('date3'))
+	</script>
+</body>
+</html>
