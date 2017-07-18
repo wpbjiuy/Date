@@ -25,6 +25,21 @@
 			margin-bottom:10px;
 			padding: 0 13px;
 		}
+		.date .ctr .npbox{
+			float:right;
+		}
+		.date .ctr .npbox button{
+			width:20px;
+			height:20px;
+			line-height:20px;
+			font-size:18px;
+			color:#666;
+			margin-left:4px;
+			vertical-align: top;
+		}
+		.date .ctr .npbox button.today{
+			line-height: 17px;
+		}
 		.date .year{
 			font-size:14px;
 			cursor: pointer;
@@ -66,6 +81,9 @@
 		}
 		.date table tbody td p:hover{
 			background-color: #eaeef2;
+		}
+		.date table tbody td p.lf,.date table thead tr.days th.lf{
+			color:#d9995d;
 		}
 		.date table tbody td p.on{
 			color: #ae3d3d;
@@ -182,7 +200,6 @@
 				_self.on(dom,'onblur',function(e){
 					_self.hide(false, e);
 				})
-
 			},
 			show:function(dom){
 				"use strict";
@@ -212,7 +229,6 @@
 				}else{
 					this.dom.style.top = _top+'px';
 				}
-
 			},
 			offsetParent:function(ele){
 				var pt = ele.parentNode;
@@ -255,6 +271,62 @@
 				this.resultDom.blur();
 				this.off(document,'onmousewheel',this.dc)
 			},
+			prev:function(_e){
+				var e = _e || window.event;
+				var _self = this;
+
+				if(e.stopPropagation){
+					e.stopPropagation();
+					e.preventDefault();
+				}else{
+					_self.isShowSlc = true;
+				}
+
+				if(_self.mh == 12){
+					_self.mh = 1;
+					_self.year += 1;
+				}else{
+					_self.mh += 1;
+				}
+				_self.resizeTbody(_self.mh)
+				_self.yearDom.childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
+			},
+			next:function(_e){
+				var e = _e || window.event;
+				var _self = this;
+
+				if(e.stopPropagation){
+					e.stopPropagation();
+					e.preventDefault();
+				}else{
+					_self.isShowSlc = true;
+				}
+
+				if(_self.mh == 1){
+					_self.mh = 12;
+					_self.year -= 1;
+				}else{
+					_self.mh -= 1;
+				}
+				_self.resizeTbody(_self.mh)
+				_self.yearDom.childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
+			},
+			toDay:function(_e){
+				var e = _e || window.event;
+				var _self = this;
+
+				if(e.stopPropagation){
+					e.stopPropagation();
+					e.preventDefault();
+				}else{
+					_self.isShowSlc = true;
+				}
+
+				_self.year = _self.dt.getFullYear();
+				_self.mh = _self.dt.getMonth()+1;
+				_self.dy = _self.dt.getDate();
+				_self.hide(_self.dy,e)
+			},
 			isPositionButtom:function (ths,ctHg){
 				var wh = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 				var thsWdBm = wh-( ths.offsetHeight+( ths.offsetTop-this.offsetParent(ths).top ) ); 
@@ -282,6 +354,10 @@
 				_self.slcMh = document.createElement('tbody');
 				_self.slcYear = document.createElement('ul');
 				_self.yearDom = document.createElement('span');
+				_self.npBox = document.createElement('span');
+				_self.prevBtn = document.createElement('button');
+				_self.nextBtn = document.createElement('button');
+				_self.todayBtn = document.createElement('button');
 				
 				_self.year = _dt.getFullYear();
 				_self.mh = _dt.getMonth()+1;
@@ -294,18 +370,38 @@
 				_self.dom.className    	= 'date';
 				_ctrDom.className 		= 'ctr';
 				_self.yearDom.className = 'year';
+				_self.npBox.className	= 'npbox';
+				_self.prevBtn.className	= 'prev';
+				_self.nextBtn.className	= 'next';
+				_self.todayBtn.className= 'today';
 				_self.slc.className 	= 'slc';
+
+				_self.prevBtn.innerText = '◂';
+				_self.nextBtn.innerText = '▸';
+				_self.todayBtn.innerText = '•';
 
 				_self.yearDom.innerHTML = _self.year+'年'+_self.mh+'月 <b>▾</b>';
 
 				_self.on(_self.yearDom, 'onmousedown', _self.showSlc)
 
+				_self.on(_self.prevBtn, 'onmousedown', _self.prev.bind(_self))
+				_self.on(_self.nextBtn, 'onmousedown', _self.next.bind(_self))
+				_self.on(_self.todayBtn, 'onmousedown', _self.toDay.bind(_self))
+
 				_ctrDom.appendChild(_self.yearDom)
+
+				_self.npBox.appendChild(_self.prevBtn)
+				_self.npBox.appendChild(_self.todayBtn)
+				_self.npBox.appendChild(_self.nextBtn)
+				_ctrDom.appendChild(_self.npBox)
 
 				_thead.appendChild(_self.createTr(function(tr){
 					tr.className = 'days';
 					for(i = 0; i < 7; i++){
 						var _th = document.createElement('th');
+						if(i == 0 || i == 6){
+							_th.className = 'lf';
+						}
 						_th.innerText = _self.dys[i];
 						tr.appendChild(_th);
 					}
@@ -474,9 +570,17 @@
 				function addTd(tr, x, s, e){
 					for(var i = 0; i < 7; i++){
 						if(x > e) break;
-						var _td = document.createElement('td')
+						var _td = document.createElement('td');
 						if(i >= s) {
-							_td.innerHTML = '<p'+(x == _self.dy && _self.year == _self.dt.getFullYear() && _self.mh == _self.dt.getMonth()+1 ? ' class="on"' : '')+'>'+(x++)+'</p>'
+							var _p = document.createElement('p');
+							if(i == 0 || i == 6){
+								_p.className = 'lf';
+							}
+							if(x == _self.dy && _self.year == _self.dt.getFullYear() && _self.mh == _self.dt.getMonth()+1){
+								_p.className = _p.className ? _p.className + ' on' : 'on';
+							}
+							_p.innerText = x++;
+							_td.appendChild(_p);
 						}
 						_td.onmousedown = function(_e){
 							var e = _e || window.event;
