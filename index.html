@@ -14,7 +14,7 @@
 		}
 		.date{
 			width:220px;
-			padding:5px 0;
+			padding:10px 0 5px;
 			border:1px solid #ddd;
 			background-color:#fff;
 			position: fixed;
@@ -22,29 +22,41 @@
 			z-index: 999;
 		}
 		.date .ctr{
+			height:20px;
 			margin-bottom:10px;
 			padding: 0 13px;
+			overflow: hidden;
+			zoom:1;
 		}
 		.date .ctr .npbox{
+
 			float:right;
 		}
 		.date .ctr .npbox button{
 			width:20px;
 			height:20px;
 			line-height:20px;
+			*line-height: 16px;
 			font-size:18px;
 			color:#666;
 			margin-left:4px;
 			vertical-align: top;
+			*vertical-align: initial;
 		}
 		.date .ctr .npbox button.today{
 			line-height: 17px;
+			*line-height: 16px;
 		}
 		.date .year{
+			float:left;
 			font-size:14px;
+			line-height: 20px;
 			cursor: pointer;
+			color:#444;
 		}
-		.date .year b{}
+		.date .year b{
+			color:#444;
+		}
 		.date table{
 			width:95%;
 			margin:0 auto;
@@ -112,7 +124,7 @@
 			line-height: 24px;
 			font-size:14px;
 			text-align:center;
-			color:#222;
+			color:#444;
 			cursor: pointer;
 			list-style: none;
 		}
@@ -133,6 +145,7 @@
 			line-height: 28px;
 			cursor: pointer;
 			padding:4px;
+			color:#555;
 		}
 		.date .slc table td.on{
 		    color: #ae3d3d;
@@ -195,10 +208,12 @@
 				if(dom.tagName !== 'INPUT') return;
 
 				_self.on(dom,'onfocus',function(e){
-					_self.show(dom);
+					var isShowDom = _self.resultDom && _self.resultDom.nextSibling && _self.resultDom.nextSibling.className == 'date';
+					isShowDom || _self.show(dom);
 				})
 				_self.on(dom,'onblur',function(e){
-					_self.hide(false, e);
+					var isShowDom = _self.resultDom.nextSibling && _self.resultDom.nextSibling.className == 'date';
+					isShowDom && _self.hide(false, e);
 				})
 			},
 			show:function(dom){
@@ -257,30 +272,39 @@
 
 				return r;
 			},
+			set:function(dy){
+				var _mh = (this.mh+'').length == 1 ? '0' + this.mh : this.mh;
+				var _dy = dy.length == 1 ? '0' + dy : dy; 
+				this.resultDom.value = this.year+'/'+_mh+'/'+_dy;
+			},
 			hide:function(dy,e){
 				if(this.isShowSlc) {
+					this.isShowSlc = false;
 					this.resultDom.focus();
 					return;
 				}
 				if(dy) {
-					var _mh = (this.mh+'').length == 1 ? '0' + this.mh : this.mh;
-					var _dy = dy.length == 1 ? '0' + dy : dy; 
-					this.resultDom.value = this.year+'/'+_mh+'/'+_dy;
+					this.set(dy);
 				}
 				if(this.dom.parentNode) this.dom.parentNode.removeChild(this.dom);
 				this.resultDom.blur();
 				this.off(document,'onmousewheel',this.dc)
 			},
-			prev:function(_e){
+			stopPropagation:function(_e, notSetIsshowSlc){
 				var e = _e || window.event;
-				var _self = this;
+				var _self = _date;
 
 				if(e.stopPropagation){
 					e.stopPropagation();
 					e.preventDefault();
 				}else{
-					_self.isShowSlc = true;
+					notSetIsshowSlc || (_self.isShowSlc = true);
 				}
+
+				return _self;
+			},
+			prev:function(_e){
+				var _self = _date.stopPropagation(_e);
 
 				if(_self.mh == 12){
 					_self.mh = 1;
@@ -292,15 +316,7 @@
 				_self.yearDom.childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
 			},
 			next:function(_e){
-				var e = _e || window.event;
-				var _self = this;
-
-				if(e.stopPropagation){
-					e.stopPropagation();
-					e.preventDefault();
-				}else{
-					_self.isShowSlc = true;
-				}
+				var _self = _date.stopPropagation(_e);
 
 				if(_self.mh == 1){
 					_self.mh = 12;
@@ -312,20 +328,12 @@
 				_self.yearDom.childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
 			},
 			toDay:function(_e){
-				var e = _e || window.event;
-				var _self = this;
-
-				if(e.stopPropagation){
-					e.stopPropagation();
-					e.preventDefault();
-				}else{
-					_self.isShowSlc = true;
-				}
+				var _self = _date.stopPropagation(_e,true);
 
 				_self.year = _self.dt.getFullYear();
 				_self.mh = _self.dt.getMonth()+1;
 				_self.dy = _self.dt.getDate();
-				_self.hide(_self.dy,e)
+				_self.hide(_self.dy, _e)
 			},
 			isPositionButtom:function (ths,ctHg){
 				var wh = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
@@ -376,23 +384,23 @@
 				_self.todayBtn.className= 'today';
 				_self.slc.className 	= 'slc';
 
-				_self.prevBtn.innerText = '◂';
-				_self.nextBtn.innerText = '▸';
+				_self.prevBtn.innerText = '▸';
+				_self.nextBtn.innerText = '◂';
 				_self.todayBtn.innerText = '•';
 
 				_self.yearDom.innerHTML = _self.year+'年'+_self.mh+'月 <b>▾</b>';
 
 				_self.on(_self.yearDom, 'onmousedown', _self.showSlc)
 
-				_self.on(_self.prevBtn, 'onmousedown', _self.prev.bind(_self))
-				_self.on(_self.nextBtn, 'onmousedown', _self.next.bind(_self))
-				_self.on(_self.todayBtn, 'onmousedown', _self.toDay.bind(_self))
+				_self.on(_self.prevBtn, 'onmousedown', _self.prev)
+				_self.on(_self.nextBtn, 'onmousedown', _self.next)
+				_self.on(_self.todayBtn, 'onmousedown', _self.toDay)
 
 				_ctrDom.appendChild(_self.yearDom)
 
-				_self.npBox.appendChild(_self.prevBtn)
-				_self.npBox.appendChild(_self.todayBtn)
 				_self.npBox.appendChild(_self.nextBtn)
+				_self.npBox.appendChild(_self.todayBtn)
+				_self.npBox.appendChild(_self.prevBtn)
 				_ctrDom.appendChild(_self.npBox)
 
 				_thead.appendChild(_self.createTr(function(tr){
@@ -421,11 +429,11 @@
 
 				_self.resizeTbody(this.mh)
 
-				_self.on(_self.slcYear,'onmousewheel',function(){
+				_self.on(_self.slcYear,'onmousewheel',function(_e){
 					_self.isShowSlc = true;
 				})
-				_self.on(_self.slcYear,'onmousedown',function(){
-					_self.isShowSlc = true;
+				_self.on(_self.slcYear,'onmousedown',function(_e){
+					_date.stopPropagation(_e);
 				})
 			},
 			addSlcMh:function(){
@@ -451,16 +459,10 @@
 							_td.innerText = (n++) + '月';
 
 							_td.onmousedown = function(_e){
-								var e = _e || window.event;
-								if(e.stopPropagation){
-									e.stopPropagation();
-									e.preventDefault();
-								}else{
-									_self.isShowSlc = true;
-								}
+								var _self = _date.stopPropagation(_e);
+
 								_self.mh = this.innerText.slice(0,-1);
 								_self.year = _self.syear || _self.year;
-								_self.dom.replaceChild(_self.tb, _self.slc);
 								_self.yearDom.childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
 								_self.resizeTbody(_self.mh);
 							}
@@ -471,17 +473,7 @@
 				}
 			},
 			showSlc:function(_e){
-				var e = _e || window.event;
-				var _self = _date;
-
-				if(e.stopPropagation){
-					e.stopPropagation();
-					e.preventDefault();
-				}else{
-					// e.cancelBubble = true;
-					// e.returnValue = false;
-					_self.isShowSlc = true;
-				}
+				var _self = _date.stopPropagation(_e);
 				
 				var onLi;
 				var i = 0;
@@ -525,13 +517,7 @@
 					}
 
 					_li.onmousedown = function(_e){
-						var e = _e || window.event;
-						if(e.stopPropagation){
-							e.stopPropagation();
-							e.preventDefault();
-						}else{
-							_self.isShowSlc = true;
-						}
+						var _self = _date.stopPropagation(_e);
 
 						for (i = 0; i < _self.slcYear.childNodes.length; i++) {
 							if(_self.slcYear.childNodes[i].className == 'on'){
@@ -549,7 +535,8 @@
 			},
 			resizeTbody:function(mh){
 				var _self = this;
-				var endDay = mh == 2 ? (_self.isy() ? 28 : 29) : (_self.isD31(mh) ? 31 : 30),
+				// var endDay = mh == 2 ? (_self.isy() ? 28 : 29) : (_self.isD31(mh) ? 31 : 30),
+				var endDay = new Date(_self.year, mh, 0).getDate(),
 					startDay = _self.startDay(mh),
 					x = 1,
 					le = Math.ceil((startDay + endDay) / 7);
@@ -565,6 +552,10 @@
 						var s = i == 0 ? startDay : 0;
 						x = addTd(tr, x, s, endDay)
 					}))
+				}
+
+				if(_self.dom.childNodes[1].tagName != 'TABLE'){
+					_self.dom.replaceChild(_self.tb, _self.slc);
 				}
 
 				function addTd(tr, x, s, e){
@@ -597,6 +588,7 @@
 </head>
 <body>
 	<div>
+	<p>HTML5 date:<input id="" type="date" /></p>
 	<p>Date1:<input id="date1" type="text" /></p>
 
 	<div style="width:120%;height:800px;"></div>
