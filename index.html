@@ -184,16 +184,7 @@
 				return ((this.year % 4)==0) && ((this.year % 100)!=0) || ((this.year % 400)==0)
 			},
 			isD31:function(n){
-				var r = false;
-
-				for (var i = 0; i < this.d31.length; i++) {
-					if(this.d31[i] == n){
-						r = true;
-						break;
-					}
-				}
-
-				return r;
+				return this.d31.indexOf(n) >= 0;
 			},
 			startDay:function(month){
 				return new Date(this.year+'/'+month+'/1').getDay();
@@ -455,20 +446,38 @@
 
 				_self.resizeTbody(this.mh)
 
+				function slcYearScoll(_e){
+					var e = _e || window.event;
+					if(_self.isScrollDirection(e)){
+						_self.slcYear.scrollTop += 10;
+					}else{
+						_self.slcYear.scrollTop -= 10;
+					}
+					_date.stopPropagation(_e);
+					_self.isShowSlc = true;
+				}
+
 				if(_self.isFirefox){
-					_self.on(_self.slcYear,'DOMMouseScroll',function(_e){
-						_self.isShowSlc = true;
-					})
+					_self.on(_self.slcYear,'DOMMouseScroll',slcYearScoll)
 				}
 				else{
-					_self.on(_self.slcYear,'onmousewheel',function(_e){
-						_self.isShowSlc = true;
-					})	
+					_self.on(_self.slcYear,'onmousewheel',slcYearScoll)	
 				}
 
 				_self.on(_self.slcYear,'onmousedown',function(_e){
 					_date.stopPropagation(_e);
 				})
+			},
+			isScrollDirection: function(e){ 
+				var direct = 0; 
+				
+				if(e.wheelDelta){//IE/Opera/Chrome 
+					direct = e.wheelDelta;
+				}else if(e.detail){//Firefox
+					direct = e.detail;
+				}
+				
+				return this.isFirefox ? direct > 0 : direct < 0;
 			},
 			addSlcMh:function(){
 				var _self = this,
@@ -489,6 +498,8 @@
 							if(n == _self.mh){
 								_td.className = 'on';
 							}
+
+							_td.n = n;
 
 							_td.innerText = (n++) + '月';
 
@@ -561,7 +572,7 @@
 						}
 
 						this.className = 'on';
-						_self.syear = year;				
+						_self.syear = year;
 					}
 					
 					_self.slcYear.appendChild(_li)
@@ -609,7 +620,10 @@
 						}
 						_td.onmousedown = function(_e){
 							var e = _e || window.event;
-							_self.hide(this.childNodes[0].innerText, e);
+							var dy = this.childNodes[0].innerText;
+							setTimeout(function(){
+								_self.hide(dy, e);
+							},10)
 						}
 						tr.appendChild(_td)
 					}
