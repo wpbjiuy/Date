@@ -289,7 +289,7 @@
 				var _dy = dy.length == 1 ? '0' + dy : dy; 
 				this.resultDom.value = this.year+'/'+_mh+'/'+_dy;
 			},
-			hide:function(dy,e){
+			hide:function(dy,e){ 
 				if(this.isShowSlc) {
 					this.isShowSlc = false;
 					this.resultDom.focus();
@@ -506,7 +506,7 @@
 							_td.onmousedown = function(_e){
 								var _self = _date.stopPropagation(_e);
 
-								_self.mh = this.innerText.slice(0,-1);
+								_self.mh = this.innerText.slice(0,-1) - 0;
 								_self.year = _self.syear || _self.year;
 								_self.yearDom.childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
 								_self.resizeTbody(_self.mh);
