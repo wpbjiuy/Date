@@ -13,7 +13,7 @@
 			height:100%;
 		}
 		.date{
-			width:220px;
+			width:240px;
 			padding-top:10px;
 			border:1px solid #ddd;
 			background-color:#fff;
@@ -65,6 +65,10 @@
 		.date .ctr .npbox span:active{
 			background-color:#ddd;
 		}
+		.date .ctr .npbox span.disabled{
+		    background-color: #f8f8f8;
+		    color: #888;
+		}
 		.date .ctr .npbox span b{
 			display: block;
 		    vertical-align: bottom;
@@ -82,11 +86,12 @@
 			color:#444;
 		}
 		.date table{
-			width:95%;
+			width: 95%;
 			margin:0 auto;
 			text-align:center;
 			border-collapse: collapse;
 			border-spacing: 0;
+			margin-bottom: 5px;
 		}
 		.date table thead{
 			width:100%;
@@ -106,45 +111,60 @@
 		.date table tbody th{
 			font-size:15px;
 		}
-		.date table tbody td{
-			
-		}
+		.date table tbody td{}
 		.date table tbody td p{
 			font-size:12px;
 			color:#666;
 			margin:5px;
 			cursor: pointer;
+			padding: 0;
 		}
 		.date table tbody td p.tm{
 			opacity: 0.3;
 			filter:alpha(opacity=30);
+			*color:#eee;
 		}
 		.date table tbody td p:hover{
 			background-color: #eaeef2;
 		}
-		.date table tbody td p.lf,.date table thead tr.days th.lf{
+		.date table tbody td p.disabled{
+		    background-color: #eee;
+		    *background-color: #f8f8f8;
+		    *color:#eee;
+		    opacity: 0.3;
+		    filter: alpha(opacity=30);
+		}
+		.date table tbody td p.lf,
+		.date table thead tr.days th.lf{
 			color:#d9995d;
+		}
+		.date table tbody td p.lf.disabled,
+		.date table thead tr.days th.lf.disabled,
+		.date table tbody td p.lf.tm,
+		.date table thead tr.days th.lf.tm{
+			*color:#fddfc3;
 		}
 		.date table tbody td p.on{
 			color: #ae3d3d;
 		}
+		
 		.date .slc{
 			width:100%;
-			height:105px;
-			border-top:1px solid #eee;
+			height: 110px;
+			border-top: 1px solid #fbcbcb;
 			overflow:hidden;
 			zoom:1;
 			position: relative;
 		}
 		.date .slc ul{
-			width:30%;
+			width: 71px;
 			/**width:20%;
 			*padding-right:18px;*/
 			height: 100%;
 			float:right;
 			overflow: auto;
 			overflow-x: hidden;
-			background-color:#eee;
+			border-left: 1px solid #fbcbcb;
 			position: relative;
 		}
 		.date .slc ul li{
@@ -161,6 +181,10 @@
 		}
 		.date .slc ul li.on{
 			color: #ae3d3d;
+		}
+		.date .slc ul li.disabled{
+		    color: #ddd;
+		    background: none;
 		}
 		.date .slc table{
 			width:70%;
@@ -181,6 +205,10 @@
 		}
 		.date .slc table td:hover{
 			background-color:#eff1f6;
+		}
+		.date .slc table td.disabled{
+		    color: #ddd;
+		    background: none;
 		}
 	</style>
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.12.4.js"></script>
@@ -207,9 +235,11 @@
 			dt:new Date(),
 			device:navigator.platform + '---' + navigator.userAgent,
 			isIE:false,
+			isIE8lt:false,
 			isFirefox:false,
 			init:function(){
 				this.isIE = this.device.match(/msie ([\d\.]+)/i);
+				this.isIE8lt = this.isIE ? this.isIE[0].match(/\d/) < 9 : false;
 				this.isFirefox = this.device.indexOf('Firefox') >= 0;
 			},
 			startDay:function(month){
@@ -228,7 +258,7 @@
 					var isShowDom = _self.resultDom && _self.resultDom.next('.date').length > 0;
 					isShowDom || _self.show($dom);
 				})
-				$dom.on('blur',function(e){
+				$dom.on('blur',function(e){ 
 					var isShowDom = _self.resultDom && _self.resultDom.next('.date').length > 0;
 					isShowDom && _self.hide(false, e);
 				})
@@ -260,7 +290,7 @@
 
 				return r;
 			},
-			set:function(dy){
+			set:function(dy){ 
 				var _mh = (this.mh+'').length == 1 ? '0' + this.mh : this.mh;
 				var _dy = dy.length == 1 ? '0' + dy : dy; 
 				var setv = '';
@@ -283,6 +313,37 @@
 					return;
 				}
 				this.resultDom = $ele;
+
+				this.minDate = $ele.data('min');
+				this.maxDate = $ele.data('max');
+
+				if(this.minDate){
+					this.minDate = new Date(this.minDate);
+					this.minYear = this.minDate.getFullYear();
+					this.minMonth = this.minDate.getMonth() + 1;
+					this.minDay = this.minDate.getDate();
+
+					if(this.minDate > this.dt){
+						this.dt = this.minDate;
+					}
+				}else{
+					this.minDate = undefined;
+					this.minYear = undefined;
+					this.minMonth = undefined;
+					this.minDay = undefined;
+				}
+				if(this.maxDate){
+					this.maxDate = new Date(this.maxDate);
+					this.maxYear = this.maxDate.getFullYear();
+					this.maxMonth = this.maxDate.getMonth() + 1;
+					this.maxDay = this.maxDate.getDate();
+				}else{
+					this.maxDate = undefined;
+					this.maxYear = undefined;
+					this.maxMonth = undefined;
+					this.maxDay = undefined;
+				}
+
 				this.initDom();
 
 				$ele.after(this.dom);
@@ -308,8 +369,9 @@
 				}else{
 					this.dom.css('top', _top +'px');
 				}
+
 			},
-			hide:function(dy,e){
+			hide:function(dy,e){ 
 				if(this.isShowSlc) { 
 					this.isShowSlc = false;
 					this.resultDom.focus();
@@ -320,18 +382,18 @@
 
 				this.dom.remove();
 
-				this.resultDom.blur();
+				this.resultDom.blur().parent().css('zIndex', this.resultDom.parent().data('yzIndex'));
 
-				$(document).off(this.isFirefox?'DOMMouseScroll.miDate':'mousewheel.miDate',this.dc)
-				$(window).off('mousedown.miDate', this.dc)
+				$(document).off(this.isFirefox?'DOMMouseScroll.miDate':'mousewheel.miDate',this.dc);
+				$(window).off('mousedown.miDate', this.dc);
 			},
 			stopPropagation:function(e, notSetIsshowSlc){ 
 				var _self = _date;
 
-				if(e || e.stopPropagation){
+				if((e || e.stopPropagation) && !_self.isIE8lt){
 					e.stopPropagation();
 					e.preventDefault();
-				}else{
+				}else{ 
 					notSetIsshowSlc || (_self.isShowSlc = true);
 				}
 
@@ -339,6 +401,8 @@
 			},
 			prev:function(_e){
 				var _self = _date.stopPropagation(_e);
+
+				if(_self.prevBtn.hasClass('disabled')) return;
 
 				if(_self.mh == 12){
 					_self.mh = 1;
@@ -351,6 +415,8 @@
 			},
 			next:function(_e){
 				var _self = _date.stopPropagation(_e);
+
+				if(_self.nextBtn.hasClass('disabled')) return;
 
 				if(_self.mh == 1){
 					_self.mh = 12;
@@ -369,9 +435,9 @@
 				_self.dy = _self.dt.getDate();
 				_self.hide(_self.dy, _e)
 			},
-			isPositionButtom:function ($ele,ctHg){
+			isPositionButtom:function ($ele, ctHg){
 				var wh = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-				var thsWdBm = wh-( $ele[0].offsetHeight+( $ele[0].offsetTop-this.offsetParent($ele).top ) ); 
+				var thsWdBm = wh-( $ele[0].offsetHeight+( $ele.parent()[0].offsetTop-this.offsetParent($ele).top ) ); 
 
 				if(!isNaN(ctHg)){
 					return thsWdBm-ctHg > 0
@@ -384,7 +450,7 @@
 				var _self = this;
 				var _ctrDom = $('<div class="ctr"></div>'),
 					_thead = $('<thead></thead>');
-				var dval = this.resultDom.val().replace(/[年月]/g,'/').replace('日',''),
+				var dval = this.resultDom.val().replace(/[年月-]/g,'/').replace('日',''),
 					tDate = new Date(dval),
 					_dt = tDate == 'Invalid Date' || tDate == 'NaN' ? _self.dt : tDate;
 
@@ -392,7 +458,7 @@
 				_self.mh = _dt.getMonth()+1;
 				_self.dy = _dt.getDate();
 
-				_self.dom = $('<div class="date"></div');
+				_self.dom = $('<div id="date" class="date"></div');
 				_self.tb = $('<table></table>');
 				_self.tbody = $('<tbody></tbody>');
 				_self.slc = $('<div class="slc"></div>');
@@ -452,6 +518,16 @@
 			addSlcYearEvent:function(){
 				var _self = this;
 
+				function setNotSlcMd(year){
+					_self.slcMh.find('td.disabled').removeClass('disabled');
+					if (year == _self.minYear) {
+						_self.slcMh.find('td:lt('+(_self.minMonth-1)+')').addClass('disabled');
+					}
+					if (year == _self.maxYear) {
+						_self.slcMh.find('td:gt('+(_self.maxMonth-1)+')').addClass('disabled');
+					}
+				}
+
 				function slcYearScroll(e){
 					var stp = _self.slcYear[0].scrollTop;
 					
@@ -463,14 +539,19 @@
 						var lis = _self.slcYear.children();
 						var li = document.createElement('li');
 						if(stp == 0){
+							if($(lis[0]).hasClass('disabled')) return;
 							li.innerText = lis[0].innerText - 1;
 							_self.slcYear.prepend(li);
 							_self.slcYear[0].scrollTop += lis[0].clientHeight;
 						}else{
+							if($(lis[lis.length - 1]).hasClass('disabled')) return;
 							li.innerText = lis[lis.length - 1].innerText - 0 + 1;
 							_self.slcYear.append(li);
 						}
 
+						if(li.innerText < _self.minYear || li.innerText > _self.maxYear){
+							li.className = 'disabled';
+						}
 					}
 				}
 				function slcYearMousewheel(e){ 
@@ -483,6 +564,8 @@
 					}
 				}
 
+				setNotSlcMd(_self.year);
+
 				_self.slcYear.on('scroll',slcYearScroll);
 
 				_self.slcYear.on(_self.isFirefox?'DOMMouseScroll':'mousewheel',slcYearMousewheel);
@@ -493,14 +576,23 @@
 
 					if(thsEle.nodeName != 'LI') return;
 
-					$(thsEle).addClass('on').siblings('.on').removeClass('on');
+					var $thsEle = $(thsEle);
+
+					if($thsEle.hasClass('disabled')) return;
+
+					$thsEle.addClass('on').siblings('.on').removeClass('on');
 
 					_self.syear = thsEle.innerText - 0;
+					setNotSlcMd(_self.syear);
 				})
 			},
 			addMhEvent:function(){
-				this.slcMh.on('mousedown', 'td', function(e){
-					var _self = _date.stopPropagation(e);
+				var _self = this;
+				this.slcMh.on('mousedown', 'td', function(e){ 
+
+					_self.stopPropagation(e);
+					
+					if($(this).hasClass('disabled')) return;
 
 					_self.mh = this.innerText.slice(0,-1) - 0;
 					_self.year = _self.syear || _self.year;
@@ -543,16 +635,17 @@
 					_self.slcMh.append($tr);
 				}
 			},
-			showSlc:function(_e){
+			showSlc:function(_e){ 
 				var _self = _e ? _date.stopPropagation(_e) : this;
 				
 				var onLi;
 				var i = 0;
 
 				if(_self.dom.children()[1].tagName == 'TABLE'){
-					_self.tb.replaceWith(_self.slc)
+					_self.tb.replaceWith(_self.slc);
 				}else{
-					_self.slc.replaceWith(_self.tb)
+					_self.slc.replaceWith(_self.tb);
+					_e && _self.resizeTbody(_self.mh);
 					return;
 				}
 
@@ -572,6 +665,10 @@
 						onLi = $li;
 					}
 
+					if(i < _self.minYear || i > _self.maxYear){
+						$li.addClass('disabled');
+					}
+
 				 	_self.slcYear.append($li)
 				}
 
@@ -580,7 +677,34 @@
 
 				_self.slcYear[0].scrollTop = onLi[0].offsetTop - _self.slcYear.outerHeight() / 2 + 10;
 			},
-			resizeTbody:function(mh){
+			setNotSlcDate: function(){
+				var _self = this;
+				var minDay, maxDay;
+
+				if(_self.minDate){
+					if (_self.minYear == _self.year && _self.minMonth == _self.mh) {
+						_self.nextBtn.addClass('disabled');
+						minDay = _self.minDay;
+					}else{
+						_self.nextBtn.removeClass('disabled');
+					}
+				}
+
+				if(_self.maxDate){
+					if (_self.maxYear == _self.year && _self.maxMonth == _self.mh) {
+						_self.prevBtn.addClass('disabled');
+						maxDay = _self.maxDay;
+					}else{
+						_self.prevBtn.removeClass('disabled');
+					}
+				}
+
+				return {
+					min:minDay,
+					max:maxDay
+				}
+			},
+			resizeTbody:function(mh){ 
 				var _self = this;
 				var endDay = new Date(_self.year, mh, 0).getDate(),
 					startDay = _self.startDay(mh),
@@ -589,6 +713,8 @@
 
 				var pm = mh <= 1 ? 12 : mh - 1,
 					pmEndDy = new Date(pm == 12 ? _self.year - 1 : _self.year, pm, 0).getDate() - startDay + 1;
+
+				var itDay = _self.setNotSlcDate();
 
 				_self.tbody.empty();
 				for(var i = 0; i < le; i++){
@@ -600,7 +726,7 @@
 				}
 
 				if(_self.dom.children()[1].tagName != 'TABLE'){
-					_self.showSlc();
+					_self.slc.replaceWith(_self.tb);
 				}
 
 				function addTd($tr, x, s, e){
@@ -612,6 +738,9 @@
 						if(i == 0 || i == 6){
 							css += 'lf';
 						}
+						if((itDay.min && x < itDay.min) || (itDay.max && x > itDay.max)){
+							css += (css?' ':'')+'disabled';
+						}
 						if(i >= s && x <= e) {
 							if(x == _self.dy && _self.year == _self.dt.getFullYear() && _self.mh == _self.dt.getMonth()+1){
 								css += (css?' ':'')+'on';
@@ -620,11 +749,20 @@
 						}else if(x > e){
 							$td.append('<p class="tm nm'+(css?' '+css:'')+'">'+(nm++)+'</p>');
 						}else{
+							if((itDay.min && x - 1 < itDay.min)){
+								css += (css?' ':'')+'disabled';
+							}
 							$td.append('<p class="tm pm'+(css?' '+css:'')+'">'+(pmEndDy++)+'</p>');
 						}
-						$td.on('mousedown', function(e){
+
+						$td.on('mousedown', function(e){ 
 							var $thsDy = $(this).children('p'),
 								dy = $thsDy.text();
+							
+							if($thsDy.hasClass('disabled')) {
+								_self.stopPropagation(e);
+								return;
+							}
 
 							if($thsDy.hasClass('pm')){
 								_self.mh = _self.mh <= 1 ? 12 : _self.mh - 1;
@@ -634,9 +772,9 @@
 								if(_self.mh == 1) _self.year += 1;
 							}
 
-							setTimeout(function(){
-								_self.hide(dy, e);
-							},10);
+							if(_self.isShowSlc) _self.isShowSlc = false;
+							
+							_self.hide(dy, e);
 						})
 						$tr.append($td);
 					}
@@ -652,7 +790,7 @@
 <body>
 	<div>
 	<p>HTML5 date:<input id="" type="date" /></p>
-	<p>Date1:<input id="date1" type="text" data-layout="yyyy-mm-dd" /></p>
+	<p>Date1:<input id="date1" type="text" data-layout="yyyy-mm-dd" data-min="2018/01/14" data-max="2019/02/11" /></p>
 
 	<div style="width:120%;height:800px;"></div>
 
