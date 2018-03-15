@@ -293,18 +293,34 @@
 			set:function(dy){ 
 				var _mh = (this.mh+'').length == 1 ? '0' + this.mh : this.mh;
 				var _dy = dy.length == 1 ? '0' + dy : dy; 
+				var _fd = this.year+'/'+_mh+'/'+_dy;
+				var _date = new Date(_fd);
 				var setv = '';
 				var layout = this.resultDom.data('layout');
 
+				var resetDate = null;
+
 				layout = layout ? layout.match(/yyyy.mm.dd.{0,1}/) : false;
+
+				if(this.minDate && _date < this.minDate) resetDate = this.minDate;
+
+				if(this.maxDate && _date > this.maxDate) resetDate = this.maxDate;
+
+				if(resetDate){
+					this.year = resetDate.getFullYear();
+					_md = resetDate.getMonth() + 1;
+					_dy = resetDate.getDate();
+				}
 
 				if(layout && layout[0]){
 					setv = layout[0].replace('yyyy',this.year).replace('mm',_mh).replace('dd',_dy);
 				}else{
-					setv = this.year+'/'+_mh+'/'+_dy
+					setv = this.year+'/'+_mh+'/'+_dy;
 				}
 
 				this.resultDom[0].value = setv;
+
+				this.resultDom.trigger('dateInput', [setv, _fd]);
 			},
 			show:function($ele){
 				"use strict";
