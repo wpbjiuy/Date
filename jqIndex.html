@@ -237,7 +237,15 @@
 			isIE:false,
 			isFirefox:false,
 			init:function(){
-				this.isIE = this.device.match(/msie ([\d\.]+)/i);
+				var lDev = this.device.toLowerCase(),
+				    ieReg = lDev.match(/msie ([\d\.]+)/i);
+
+				if(ieReg) {
+					this.isIE = ieReg;
+					this.verIE = ieReg[1];
+					this.isIE8lt = parseInt(this.verIE) < 9;
+				}
+
 				this.isFirefox = this.device.indexOf('Firefox') >= 0;
 			},
 			startDay:function(month){
@@ -260,7 +268,7 @@
 					var $ths = $(this);
 					var isShowDom = _self.resultDom && _self.resultDom.next('.date').length > 0;
 					isShowDom && _self.hide(false, e);
-					var _date = new Date($ths.val().replace(' 00:00:00',''));
+					var _date = new Date($ths.val().replace(/-/g,'/').replace(' 00:00:00',''));
 
 					if(isNaN(_date.valueOf())){
 						$ths.val('');
@@ -347,6 +355,7 @@
 				this.resultDom[0].value = setv;
 
 				this.resultDom.trigger('dateInput', [setv, _fd]);
+				this.resultDom.trigger('input');
 
 				return this;
 			},
@@ -455,7 +464,7 @@
 					this.resultDom.focus();
 					return;
 				}
-
+				
 				if(dy && !this.isSet) {
 					this.isSet = true;
 					this.set(dy+'');
@@ -834,6 +843,8 @@
 					}
 
 					if(_self.isShowSlc) _self.isShowSlc = false;
+
+					_self.isSet = false;
 					
 					_self.hide(dy, e);
 				});
