@@ -494,7 +494,7 @@
 				return _self;
 			},
 			prev:function(_e){
-				var _self = _date.stopPropagation(_e, true);
+				var _self = _date.stopPropagation(_e);
 
 				if(_self.prevBtn.hasClass('disabled')) return;
 
@@ -523,7 +523,7 @@
 				_self.yearDom[0].childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
 			},
 			toDay:function(_e){
-				var _self = _date.stopPropagation(_e);
+				var _self = _date.stopPropagation(_e, true);
 
 				_self.isShowSlc = false;
 
