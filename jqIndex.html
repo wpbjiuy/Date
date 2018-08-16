@@ -264,7 +264,7 @@
 					var isShowDom = _self.resultDom && _self.resultDom.next('.date').length > 0;
 					isShowDom || _self.show($dom);
 				})
-				$dom.on('blur',function(e){
+				$dom.on('blur',function(e){ 
 					var $ths = $(this);
 					var isShowDom = _self.resultDom && _self.resultDom.next('.date').length > 0;
 					isShowDom && _self.hide(false, e);
@@ -316,6 +316,7 @@
 				return r;
 			},
 			set:function(dy, date){ 
+				
 				if(date){
 					this.year = date.getFullYear();
 					this.mh = date.getMonth()+1;
@@ -366,7 +367,7 @@
 			        yTime = _date.getTime();
 
 			    if(isNaN(_num)) {
-			        return new Date(str);
+			        return new Date(str?str.replace(/-/g,'/'):undefined);
 			    }else{
 
 			        if(rNum.indexOf('D#') == 0){
@@ -464,8 +465,8 @@
 					this.resultDom.focus();
 					return;
 				}
-				
-				if(dy && !this.isSet) {
+
+				if(dy && (!this.isSet || e == 'set')) {
 					this.isSet = true;
 					this.set(dy+'');
 				}
@@ -487,12 +488,13 @@
 					e.preventDefault();
 				}else{ 
 					notSetIsshowSlc || (_self.isShowSlc = true);
+					_self.isSet = true;
 				}
 
 				return _self;
 			},
 			prev:function(_e){
-				var _self = _date.stopPropagation(_e);
+				var _self = _date.stopPropagation(_e, true);
 
 				if(_self.prevBtn.hasClass('disabled')) return;
 
@@ -502,30 +504,33 @@
 				}else{
 					_self.mh += 1;
 				}
-				_self.resizeTbody(_self.mh)
+				_self.resizeTbody(_self.mh);
 				_self.yearDom[0].childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
 			},
 			next:function(_e){
 				var _self = _date.stopPropagation(_e);
 
 				if(_self.nextBtn.hasClass('disabled')) return;
-
+				
 				if(_self.mh == 1){
 					_self.mh = 12;
 					_self.year -= 1;
 				}else{
 					_self.mh -= 1;
 				}
-				_self.resizeTbody(_self.mh)
+
+				_self.resizeTbody(_self.mh);
 				_self.yearDom[0].childNodes[0].data = _self.year+'年'+_self.mh+'月 ';
 			},
 			toDay:function(_e){
-				var _self = _date.stopPropagation(_e,true);
+				var _self = _date.stopPropagation(_e);
+
+				_self.isShowSlc = false;
 
 				_self.year = _self.dt.getFullYear();
 				_self.mh = _self.dt.getMonth()+1;
 				_self.dy = _self.dt.getDate();
-				_self.hide(_self.dy, _e)
+				_self.hide(_self.dy, 'set');
 			},
 			isPositionButtom:function ($ele, ctHg){
 				var wh = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
@@ -826,11 +831,11 @@
 				}
 
 				_self.tbody.find('td').on('mousedown', function(e){ 
+					_self.stopPropagation(e);
 					var $thsDy = $(this).children('p'),
 						dy = $thsDy.text();
 					
 					if($thsDy.hasClass('disabled')) {
-						_self.stopPropagation(e);
 						return;
 					}
 
@@ -843,10 +848,8 @@
 					}
 
 					if(_self.isShowSlc) _self.isShowSlc = false;
-
-					_self.isSet = false;
 					
-					_self.hide(dy, e);
+					_self.hide(dy, 'set');
 				});
 
 				if(_self.dom.children()[1].tagName != 'TABLE'){
